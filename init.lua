@@ -3,28 +3,6 @@ local mcp = {
 	_VERSION = 1.0,
 }
 
-local chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-local digits = {}
-for i, c in string.gmatch(chars, "()(.)") do
-	digits[i - 1] = c
-	digits[c] = i - 1
-end
-function mcp.incrtag(tag)
-	local carry = true
-	tag = string.reverse(string.gsub(string.reverse(tag), ".", function(c)
-		if carry then
-			local i = digits[c]
-			local ret = (i + 1) % #chars
-			carry = (ret < i)
-			return digits[ret]
-		end
-	end))
-	if carry then
-		return "1" .. tag
-	end
-	return tag
-end
-
 -- returns the highest version that both client and server support
 -- if completely incompatible, returns nil
 function mcp.checkversion(clmin, clmax, svmin, svmax)
