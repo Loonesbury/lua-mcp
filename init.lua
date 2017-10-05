@@ -301,6 +301,7 @@ function mcp.new(auth, pkgs)
 		-- supported packages will have 'version' != nil
 		packages = {
 			["mcp-negotiate"] = require("mcp.packages.mcp-negotiate"),
+			["mcp-cord"]      = require("mcp.packages.mcp-cord"),
 		},
 		-- full message name => func
 		handlers = {},
