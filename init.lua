@@ -161,8 +161,16 @@ function mcp:handlemsg(msg, args)
 			return nil, "'mcp' already sent"
 		end
 
-		self.version = mcp.checkversion(self.minver, self.maxver, tonumber(args["version"]), tonumber(args["to"]))
+		local remote = self.remote
+		remote.minver, remote.maxver = tonumber(args["version"]), tonumber(args["to"])
+
+		self.version = mcp.checkversion(
+			self.minver, self.maxver,
+			remote.minver, remote.maxver
+		)
+
 		if not self.version then
+			-- lack of mcp support is not reported as an error
 			return true
 		end
 
@@ -284,14 +292,19 @@ function mcp.new(auth, pkgs)
 		-- full message name => func
 		handlers = {},
 
-		-- packages the other side supports, even if we don't
-		remotepkgs = {
-			-- MCP2.1 requires AT LEAST mcp-negotiate 1.0.
-			-- also mcp-negotiate 1.0 is terrible and doesn't negotiate
-			-- support for *itself*.
-			["mcp-negotiate"] = {
-				minver = 1.0,
-				maxver = 1.0
+		remote = {
+			minver = nil,
+			maxver = nil,
+
+			-- all packages they support (including any we don't)
+			packages = {
+				["mcp-negotiate"] = {
+					-- MCP2.1 requires AT LEAST mcp-negotiate 1.0.
+					-- also mcp-negotiate 1.0 is terrible and doesn't negotiate
+					-- support for *itself*.
+					minver = 1.0,
+					maxver = 1.0
+				}
 			}
 		},
 	}, {__index = mcp})

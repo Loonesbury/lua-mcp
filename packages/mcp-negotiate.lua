@@ -10,7 +10,7 @@ return {
 				minver = tonumber(args["min-version"]),
 				maxver = tonumber(args["max-version"]),
 			}
-			obj.remotepkgs[args.package] = rem
+			obj.remote.packages[args.package] = rem
 
 			local loc = obj.packages[args.package]
 			if loc then
