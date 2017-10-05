@@ -212,8 +212,9 @@ function mcp:handlemsg(msg, args)
 			return nil, "unhandled message '" .. msg .. "'"
 		end
 		fn(self, msg, args)
-		return true
 	end
+
+	return true
 end
 
 function mcp:supports(pkg)
