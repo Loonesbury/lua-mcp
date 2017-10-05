@@ -5,7 +5,7 @@ return {
 	maxver = 2.0,
 
 	funcs = {
-		["can"] = function(obj, msg, args)
+		["can"] = function(obj, args)
 			local rem = {
 				minver = tonumber(args["min-version"]),
 				maxver = tonumber(args["max-version"]),
@@ -18,7 +18,7 @@ return {
 			end
 		end,
 
-		["end"] = function(obj)
+		["end"] = function(obj, args)
 			obj.negotiating = false
 			obj:onready()
 		end,

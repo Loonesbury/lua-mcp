@@ -91,7 +91,7 @@ return {
 
 	funcs = {
 		-- the remote opened a new cord with us
-		["open"] = function(obj, msg, args)
+		["open"] = function(obj, args)
 
 			local cord = meta.new(obj, args._id, args._type)
 			obj.cords[cord._id] = cord
@@ -103,7 +103,7 @@ return {
 		end,
 
 		-- the remote sent us a message over a cord
-		[""] = function(obj, _, args)
+		[""] = function(obj, args)
 
 			local cord = obj.cords[args._id]
 			if not cord then
@@ -128,7 +128,7 @@ return {
 		end,
 
 		-- the remote closed a cord
-		["closed"] = function(obj, msg, args)
+		["closed"] = function(obj, args)
 
 			local cord = obj.cords[args._id]
 			if not cord then
