@@ -205,7 +205,6 @@ function mcp:handlemsg(msg, args)
 		end
 		self:sendmcp("mcp-negotiate-end", nil, true)
 		self.negotiating = true
-
 	else
 		local fn = self.handlers[msg:lower()]
 		if not fn then
@@ -234,7 +233,7 @@ function mcp:sendmcp(msg, args, nocheck)
 
 	for k, v in pairs(args or {}) do
 		k, v = tostring(k), tostring(v)
-		if not k:find("^%a[^\"*:\\ ]*$") then
+		if not k:find("^[%a_][^\"*:\\ ]*$") then
 			error("invalid key '" .. k .. "'", 2)
 		end
 
@@ -280,7 +279,9 @@ function mcp:onready() end
 -- if calling this on the server, 'auth' should always be nil
 -- 'pkgs' is an array of packages to support
 function mcp.new(auth, pkgs)
-	assert(not auth:find("[\"*:\\ ]"), "invalid auth key '" .. auth .. "'")
+	if auth and auth:find("[\"*:\\ ]") then
+		error("invalid auth key '" .. auth .. "'")
+	end
 
 	local obj = setmetatable({
 		-- "nil" if MCP is not in use
