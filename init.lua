@@ -224,7 +224,10 @@ end
 function mcp:sendmcp(msg, args, nocheck)
 	if not nocheck then
 		assert(self.version, "server does not support MCP, or negotiation not yet begun")
-		assert(self:supports(msg), "sent unsupported message '" .. msg .. "'")
+		-- argh argh argh
+		assert(self:supports(msg) or self:supports(msg:gsub("%-[^%-]+$", "")),
+			"sent unsupported message '" .. msg .. "'"
+		)
 	end
 	local res = (msg == "mcp") and {msg} or {msg, self.auth}
 	local multi = {}
