@@ -151,14 +151,20 @@ end
 
 function mcp:handlemsg(msg, args)
 	-- only allow 'mcp' until we've settled on a version
-	if not self.version and msg ~= "mcp" then
-		return
+	if self.version then
+		if self.version < 0 then
+			return nil, "remote sent '" .. msg .. "' after version mismatch"
+		elseif msg == "mcp" then
+			return nil, "remote re-sent 'mcp'"
+		end
+	elseif msg ~= "mcp" then
+		return nil, "got '" .. msg .. "' before 'mcp'"
 	end
 
 	if msg == "mcp" then
 		-- ignore renegotiation
 		if self.version then
-			return nil, "'mcp' already sent"
+			return nil, "remote re-sent 'mcp'"
 		end
 
 		local remote = self.remote
@@ -167,17 +173,19 @@ function mcp:handlemsg(msg, args)
 		self.version = mcp.checkversion(
 			self.minver, self.maxver,
 			remote.minver, remote.maxver
-		)
+		) or -1
 
-		if not self.version then
-			-- lack of mcp support is not reported as an error
+		if self.version <= 0 then
+			-- version mismatches aren't reported as an error
+			-- only if they try to send stuff afterwards.
 			return true
 		end
 
+		-- the standard isn't explicit on who MUST send a key.
+		-- Fuzzball MUCK seems to generate a random key if the client
+		-- doesn't send one, but that's the only place I've seen this
+		-- done, so let's not bother imitating it.
 		if self.server then
-			-- Fuzzball MUCK seems to generate a random key if the client
-			-- doesn't send one, but that's the only place I've seen this
-			-- so let's not bother imitating it
 			self.auth = args["authentication-key"]
 		end
 
@@ -196,8 +204,8 @@ function mcp:handlemsg(msg, args)
 			}, true)
 		end
 		self:sendmcp("mcp-negotiate-end", nil, true)
-
 		self.negotiating = true
+
 	else
 		local fn = self.handlers[msg:lower()]
 		if not fn then
