@@ -1,5 +1,5 @@
 -- XXX: this whole thing is pretty ugly to use.
--- need clean up the API a little.
+-- need to clean up the API a little.
 local meta = {}
 
 -- return a new cord object
@@ -104,6 +104,7 @@ return {
 
 		-- the remote sent us a message over a cord
 		[""] = function(obj, _, args)
+
 			local cord = obj.cords[args._id]
 			if not cord then
 				return nil, "remote used unknown cord '" .. args._id .. "'"
@@ -123,6 +124,7 @@ return {
 			if mcphook then
 				mcphook(cord, args)
 			end
+
 		end,
 
 		-- the remote closed a cord

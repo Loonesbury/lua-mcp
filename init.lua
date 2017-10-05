@@ -28,10 +28,12 @@ end
 -- returns the highest version that both client and server support
 -- if completely incompatible, returns nil
 function mcp.checkversion(clmin, clmax, svmin, svmax)
+
 	if clmax >= svmin and svmax >= clmin then
 		return math.min(svmax, clmax)
 	end
 	return nil
+
 end
 
 -- collapses sequences of backslashes, and replaces unescaped quotes with "\1"
@@ -47,6 +49,7 @@ end
 -- returns (true, output-str) if no MCP
 -- returns (nil, error-str) on invalid MCP
 function mcp:parse(raw)
+
 	if raw:sub(1, 3) == "#$\"" then
 		return true, raw:sub(4)
 	elseif raw:sub(1, 3) ~= "#$#" then
@@ -140,6 +143,7 @@ function mcp:parse(raw)
 		self.data[tag] = args
 		return true
 	end
+
 end
 
 -- converts a float or an integer to a string, with at least 1 decimal place
@@ -150,6 +154,7 @@ local function VER(n)
 end
 
 function mcp:handlemsg(msg, args)
+
 	-- only allow 'mcp' until we've settled on a version
 	if self.version then
 		if self.version < 0 then
@@ -214,13 +219,17 @@ function mcp:handlemsg(msg, args)
 	end
 
 	return true
+
 end
 
 function mcp:supports(pkg)
+
 	return self.packages[pkg] and self.packages[pkg].version
+
 end
 
 function mcp:sendmcp(msg, args, nocheck)
+
 	if not nocheck then
 		assert(self.version, "server does not support MCP, or negotiation not yet begun")
 		-- argh argh argh
@@ -261,13 +270,16 @@ function mcp:sendmcp(msg, args, nocheck)
 		end
 		self:sendraw("#$#* " .. tag)
 	end
+
 end
 
 function mcp:send(str)
+
 	if str:sub(1, 3) == "#$#" then
 		str = "#$\"" .. str
 	end
 	self:sendraw(str)
+
 end
 
 -- called to send out a message
@@ -279,6 +291,7 @@ function mcp:onready() end
 -- if calling this on the server, 'auth' should always be nil
 -- 'pkgs' is an array of packages to support
 function mcp.new(auth, pkgs)
+
 	if auth and auth:find("[\"*:\\ ]") then
 		error("invalid auth key '" .. auth .. "'")
 	end
@@ -349,6 +362,7 @@ function mcp.new(auth, pkgs)
 	end
 
 	return obj
+
 end
 
 return mcp
