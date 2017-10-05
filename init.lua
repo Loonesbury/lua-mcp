@@ -54,7 +54,7 @@ function mcp:parse(raw)
 	end
 
 	if self.debug then
-		print("\27[38;5;81m" .. raw:sub(4) .. "\27[0m")
+		print((self.server and "\27[38;5;81m" or "\27[38;4;221m") .. raw:sub(4) .. "\27[0m")
 	end
 
 	local msg, argstr = raw:gsub("(\\*)(.?)", repl):match("^#$#(%S*)(.-)$")
