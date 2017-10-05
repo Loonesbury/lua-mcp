@@ -107,7 +107,7 @@ return {
 
 			local cord = obj.cords[args._id]
 			if not cord then
-				return nil, "remote used unknown cord '" .. args._id .. "'"
+				return "remote used unknown cord '" .. args._id .. "'"
 			end
 
 			local msg = args._message
@@ -132,7 +132,7 @@ return {
 
 			local cord = obj.cords[args._id]
 			if not cord then
-				return nil, "remote closed unknown cord '" .. args._id .. "'"
+				return "remote closed unknown cord '" .. args._id .. "'"
 			end
 			cord:onclosed(true)
 

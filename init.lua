@@ -215,7 +215,10 @@ function mcp:handlemsg(msg, args)
 		if not fn then
 			return nil, "unhandled message '" .. msg .. "'"
 		end
-		fn(self, args)
+		local err = fn(self, args)
+		if err then
+			return nil, err
+		end
 	end
 
 	return true
