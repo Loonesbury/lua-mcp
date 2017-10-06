@@ -4,7 +4,7 @@ local mcp = {
 }
 
 local function fixminor(str)
-	local major, minor = string.match(str, "^(%-?%d+)%.?0*(%d-)$")
+	local major, minor = string.match(str, "^(%-?%d+)%.?(%d-)$")
 	return major*1000 + (tonumber(minor) or 0)
 end
 local function unfixminor(f)
@@ -282,6 +282,17 @@ function mcp:greet()
 	-- if the args are out-of-order, dict ordering not being guaranteed
 	return self:sendraw("#$#mcp version: " .. self.minver .. " to: " .. self.maxver)
 
+end
+
+-- if the server does not support MCP, returns nil
+-- if server supports an incompatible MCP version, returns 0, 0
+-- otherwise, returns major and minor version
+function mcp:getversion()
+	if not self.version then
+		return nil
+	end
+	local major, minor = string.match(self.version, "^(%-?%d+)%.?(%d-)$")
+	return tonumber(major), tonumber(minor) or 0
 end
 
 -- if calling this on the server, 'auth' should always be nil
