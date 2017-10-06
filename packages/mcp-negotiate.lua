@@ -1,14 +1,14 @@
 local mcp = require("mcp")
 
 return {
-	minver = 1.0,
-	maxver = 2.0,
+	minver = "1.0",
+	maxver = "2.0",
 
 	funcs = {
 		["can"] = function(obj, args)
 			local rem = {
-				minver = tonumber(args["min-version"]),
-				maxver = tonumber(args["max-version"]),
+				minver = args["min-version"],
+				maxver = args["max-version"],
 			}
 			obj.remote.packages[args.package] = rem
 

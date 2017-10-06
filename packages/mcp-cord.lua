@@ -79,8 +79,8 @@ function mcp:bindcord(type, fn)
 end
 
 return {
-	minver = 1.0,
-	maxver = 1.0,
+	minver = "1.0",
+	maxver = "1.0",
 
 	init = function(obj)
 		obj.last_cord = 0

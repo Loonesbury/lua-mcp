@@ -3,12 +3,22 @@ local mcp = {
 	_VERSION = 1.0,
 }
 
--- returns the highest version that both client and server support
--- if completely incompatible, returns nil
-function mcp.checkversion(clmin, clmax, svmin, svmax)
+local function fixminor(str)
+	local major, minor = string.match(str, "^(%-?%d+)%.?0*(%d-)$")
+	return major*1000 + (tonumber(minor) or 0)
+end
+local function unfixminor(f)
+	return math.floor(f*0.001) .. "." .. (f % 1000)
+end
 
-	if clmax >= svmin and svmax >= clmin then
-		return math.min(svmax, clmax)
+-- returns the highest shared version between [low, high] and [min, max]
+-- if the ranges do not overlap, returns nil
+function mcp.checkversion(low, high, min, max)
+	low, high = fixminor(low), fixminor(high)
+	min, max  = fixminor(min), fixminor(max)
+
+	if high >= min and low <= max then
+		return unfixminor(math.min(high, max))
 	end
 	return nil
 
@@ -124,18 +134,11 @@ function mcp:parse(raw)
 
 end
 
--- converts a float or an integer to a string, with at least 1 decimal place
--- we need this because Fuzzball 6 and HellMOO will refuse to accept integers
--- in protocol and package version numbers.
-local function VER(n)
-	return ("%f"):format(n):gsub("0+$", ""):gsub("%.$", ".0")
-end
-
 function mcp:handlemsg(msg, args)
 
 	-- only allow 'mcp' until we've settled on a version
 	if self.version then
-		if self.version < 0 then
+		if self.version == "0.0" then
 			return nil, "remote sent '" .. msg .. "' after version mismatch"
 		elseif msg == "mcp" then
 			return nil, "remote re-sent 'mcp'"
@@ -151,14 +154,14 @@ function mcp:handlemsg(msg, args)
 		end
 
 		local remote = self.remote
-		remote.minver, remote.maxver = tonumber(args["version"]), tonumber(args["to"])
+		remote.minver, remote.maxver = args["version"], args["to"]
 
 		self.version = mcp.checkversion(
 			self.minver, self.maxver,
 			remote.minver, remote.maxver
-		) or -1
+		) or "0.0"
 
-		if self.version <= 0 then
+		if self.version  == "0.0" then
 			-- version mismatches aren't reported as an error
 			-- only if they try to send stuff afterwards.
 			return true
@@ -175,15 +178,15 @@ function mcp:handlemsg(msg, args)
 		if self.client then
 			self:sendmcp("mcp", {
 				["authentication-key"] = self.auth,
-				["version"] = VER(self.minver),
-				["to"] = VER(self.maxver),
+				["version"] = self.minver,
+				["to"] = self.maxver,
 			}, true)
 		end
 		for k, v in pairs(self.packages) do
 			self:sendmcp("mcp-negotiate-can", {
 				["package"] = k,
-				["min-version"] = VER(v.minver),
-				["max-version"] = VER(v.maxver),
+				["min-version"] = v.minver,
+				["max-version"] = v.maxver,
 			}, true)
 		end
 		self:sendmcp("mcp-negotiate-end", nil, true)
@@ -280,8 +283,8 @@ function mcp.new(auth, pkgs)
 	local obj = setmetatable({
 		-- "nil" if MCP is not in use
 		version = nil,
-		minver = 2.1,
-		maxver = 2.1,
+		minver = "2.1",
+		maxver = "2.1",
 
 		auth = auth,
 		server = (auth == nil),
@@ -310,8 +313,8 @@ function mcp.new(auth, pkgs)
 					-- MCP2.1 requires AT LEAST mcp-negotiate 1.0.
 					-- also mcp-negotiate 1.0 is terrible and doesn't negotiate
 					-- support for *itself*.
-					minver = 1.0,
-					maxver = 1.0
+					minver = "1.0",
+					maxver = "1.0"
 				}
 			}
 		},
@@ -319,15 +322,15 @@ function mcp.new(auth, pkgs)
 
 	-- as recommended by MCP2.1, we start out with mcp-negotiate 2.0 since
 	-- it's compatible with 1.0 and 1.0 is required for MCP2.1 compliance.
-	obj.packages["mcp-negotiate"].version = 2.0
+	obj.packages["mcp-negotiate"].version = "2.0"
 
 	-- load and verify additional packages
 	for k, v in pairs(pkgs or {}) do
 		obj.packages[k] = v
 	end
 	for pkgname, v in pairs(obj.packages) do
-		assert(v.minver, "package '" .. pkgname .. "' has no 'minver'")
-		assert(v.maxver, "package '" .. pkgname .. "' has no 'maxver'")
+		v.minver = assert(v.minver, "package '" .. pkgname .. "' has no 'minver'")
+		v.maxver = assert(v.maxver, "package '" .. pkgname .. "' has no 'maxver'")
 
 		for msgname, fn in pairs(v.funcs or {}) do
 			local key = pkgname
