@@ -132,21 +132,11 @@ end
 
 function mcp:handlemsg(msg, args)
 
-	-- only allow 'mcp' until we've settled on a version
-	if self.version then
-		if self.version == "0.0" then
-			return nil, "remote sent '" .. msg .. "' after version mismatch"
-		elseif msg == "mcp" then
-			return nil, "remote re-sent 'mcp'"
-		end
-	elseif msg ~= "mcp" then
-		return nil, "got '" .. msg .. "' before 'mcp'"
-	end
-
+	-- NOTE: we allow renegotiation, but this isn't mentioned in the standard
+	-- so you probably shouldn't actually try to trigger it yourself
 	if msg == "mcp" then
-		-- ignore renegotiation
-		if self.version then
-			return nil, "remote re-sent 'mcp'"
+		if self.version ~= nil then
+			self:reset()
 		end
 
 		local remote = self.remote
@@ -157,7 +147,7 @@ function mcp:handlemsg(msg, args)
 			remote.minver, remote.maxver
 		) or "0.0"
 
-		if self.version  == "0.0" then
+		if self.version == "0.0" then
 			-- version mismatches aren't reported as an error
 			-- only if they try to send stuff afterwards.
 			return true
@@ -187,6 +177,7 @@ function mcp:handlemsg(msg, args)
 		end
 		self:sendmcp("mcp-negotiate-end", nil, true)
 		self.negotiating = true
+
 	else
 		local fn = self.handlers[msg:lower()]
 		if not fn then
@@ -291,6 +282,39 @@ function mcp:getversion()
 	return tonumber(major), tonumber(minor) or 0
 end
 
+-- resets everything
+function mcp:reset()
+
+	if self.server then
+		self.auth = nil
+	end
+	for k, v in pairs(self.packages) do
+		v.version = nil
+	end
+
+	self.remote.minver, self.remote.maxver = nil, nil
+	self.remote.packages = {
+		["mcp-negotiate"] = {
+			-- MCP2.1 requires AT LEAST mcp-negotiate 1.0.
+			-- also mcp-negotiate 1.0 is terrible and doesn't negotiate
+			-- support for *itself*.
+			minver = "1.0",
+			maxver = "1.0"
+		}
+	}
+
+	-- as recommended by MCP2.1, we start out with mcp-negotiate 2.0 since
+	-- it's compatible with 1.0 and 1.0 is required for MCP2.1 compliance.
+	self.packages["mcp-negotiate"].version = "2.0"
+
+	for k, v in pairs(self.packages) do
+		if v.init then
+			v.init(self)
+		end
+	end
+
+end
+
 -- if calling this on the server, 'auth' should always be nil
 -- 'pkgs' is an array of packages to support
 function mcp.new(auth, pkgs)
@@ -327,21 +351,9 @@ function mcp.new(auth, pkgs)
 			maxver = nil,
 
 			-- all packages they support (including any we don't)
-			packages = {
-				["mcp-negotiate"] = {
-					-- MCP2.1 requires AT LEAST mcp-negotiate 1.0.
-					-- also mcp-negotiate 1.0 is terrible and doesn't negotiate
-					-- support for *itself*.
-					minver = "1.0",
-					maxver = "1.0"
-				}
-			}
+			packages = {}
 		},
 	}, {__index = mcp})
-
-	-- as recommended by MCP2.1, we start out with mcp-negotiate 2.0 since
-	-- it's compatible with 1.0 and 1.0 is required for MCP2.1 compliance.
-	obj.packages["mcp-negotiate"].version = "2.0"
 
 	-- load and verify additional packages
 	for k, v in pairs(pkgs or {}) do
@@ -358,11 +370,9 @@ function mcp.new(auth, pkgs)
 			end
 			obj.handlers[key:lower()] = fn
 		end
-
-		if v.init then
-			v.init(obj)
-		end
 	end
+
+	obj:reset()
 
 	return obj
 
