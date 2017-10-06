@@ -44,10 +44,6 @@ function mcp:parse(raw)
 		return true, raw
 	end
 
-	if self.debug then
-		print((self.server and "\27[38;5;81m" or "\27[38;4;221m") .. raw:sub(4) .. "\27[0m")
-	end
-
 	local msg, argstr = raw:gsub("(\\*)(.?)", repl):match("^#$#(%S*)(.-)$")
 	if not msg:find("^[%a_][%w%-_]*$") then
 		return nil, "invalid message '" .. msg .. "'"
