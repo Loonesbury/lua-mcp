@@ -206,12 +206,6 @@ function mcp:handlemsg(msg, args)
 
 end
 
-function mcp:supports(pkg)
-
-	return self.packages[pkg] and self.packages[pkg].version
-
-end
-
 function mcp:sendmcp(msg, args, nocheck)
 
 	if not nocheck then
@@ -257,6 +251,7 @@ function mcp:sendmcp(msg, args, nocheck)
 
 end
 
+-- sends a line of non-MCP output, escaping "#$#" if necessary
 function mcp:send(str)
 
 	if str:sub(1, 3) == "#$#" then
@@ -271,6 +266,23 @@ function mcp:sendraw(str) end
 
 -- called when negotiation is finished
 function mcp:onready() end
+
+-- if we support the given package, returns its version number
+function mcp:supports(pkg)
+	return self.packages[pkg] and self.packages[pkg].version
+end
+
+-- for servers: sends the initial MCP header that tells the client
+-- that it can start negotiation
+function mcp:greet()
+
+	assert(self.server, "cannot use 'greet' as a client")
+
+	-- format it ourselves, so it doesn't look stupid for non-MCP clients
+	-- if the args are out-of-order, dict ordering not being guaranteed
+	return self:sendraw("#$#mcp version: " .. self.minver .. " to: " .. self.maxver)
+
+end
 
 -- if calling this on the server, 'auth' should always be nil
 -- 'pkgs' is an array of packages to support
