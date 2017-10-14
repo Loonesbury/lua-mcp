@@ -52,7 +52,7 @@ function mcp:parse(raw)
 
 	local auth
 	if msg ~= "mcp" then
-		auth, argstr = argstr:match("^ ([^ ]+)(.-)$")
+		auth, argstr = argstr:match("^ +([^ ]*)(.-)$")
 		if not auth then
 			if msg == "*" or msg == ":" then
 				return nil, "multiline message with no tag"
@@ -67,7 +67,7 @@ function mcp:parse(raw)
 		if not args then
 			return nil, "multiline message with unused tag '" .. auth .. "'"
 		end
-		local key, pval = argstr:match("^ ([^ :]+): (.-)$")
+		local key, pval = argstr:match("^ +([^ :]+): (.-)$")
 		if not key then
 			return nil, "invalid syntax"
 		end
@@ -99,9 +99,9 @@ function mcp:parse(raw)
 	local multi
 	local i, len = 1, #argstr
 	while i <= len do
-		local s, e, key, val = argstr:find("^ ([^ :]+): \1([^\1]*)\1", i)
+		local s, e, key, val = argstr:find("^ +([^ :]+): +\1([^\1]*)\1", i)
 		if not s then
-			s, e, key, val = argstr:find("^ ([^ :]+): ([^ \1]*)", i)
+			s, e, key, val = argstr:find("^ +([^ :]+): +([^ \1]*)", i)
 			if not s then
 				return nil, "invalid syntax (bad key-value pair)"
 			end
