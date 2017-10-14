@@ -25,13 +25,8 @@ function mcp.checkversion(low, high, min, max)
 
 end
 
--- collapses sequences of backslashes, and replaces unescaped quotes with "\1"
-local function repl(esc, char)
-	if #esc % 2 == 0 then
-		return string.sub(esc, 1, #esc*0.5) .. (char == '"' and "\1" or char)
-	end
-	return string.sub(esc, 1, (#esc - 1)*0.5) .. char
-end
+local function check_ident(str) return str:find("^[%a_][%w%-_]*$") end
+local function check_simple(str) return not str:find('["*:\\ ]') end
 
 -- parses a raw incoming message
 -- returns (true) on valid MCP
@@ -45,19 +40,36 @@ function mcp:parse(raw)
 		return true, raw
 	end
 
-	local msg, argstr = raw:gsub("(\\*)(.?)", repl):match("^#$#(%S*)(.-)$")
-	if not msg:find("^[%a_][%w%-_]*$") then
-		return nil, "invalid message '" .. msg .. "'"
+	local msg, argstr = raw:match("^#$#([^ ]*)(.-)$")
+	if #msg == 0 then
+		return nil, "empty message name"
+	elseif msg ~= "*" and msg ~= ":" and not check_ident(msg) then
+		return nil, "invalid message name '" .. msg .. "'"
 	end
 
+	msg = msg:lower()
+	-- handle escaped chars, replace unescaped quotes with "\1"
+	argstr = argstr:gsub("(\\*)([\\\"])", function(esc, ch)
+		if #esc % 2 == 0 and ch == '"' then
+			ch = "\1"
+		end
+		return esc:sub(1, math.floor(#esc/2)) .. ch
+	end)
+
+	-- weird juggling because 'mcp' doesn't include an auth key
 	local auth
 	if msg ~= "mcp" then
-		auth, argstr = argstr:match("^ +([^ ]*)(.-)$")
-		if not auth then
-			if msg == "*" or msg == ":" then
-				return nil, "multiline message with no tag"
+		auth, argstr = argstr:match("^ +([^ ]+)(.-)$")
+		if auth then
+			if auth:sub(-1) == ":" then
+				return nil, "no auth key"
+			elseif not check_simple(auth) then
+				return nil, "invalid authkey '" .. auth .. "'"
 			end
-			return nil, "invalid syntax (no auth key)"
+		elseif msg == "*" or msg == ":" then
+			return nil, "multiline with no datatag"
+		else
+			return nil, "no auth key"
 		end
 	end
 
@@ -92,7 +104,7 @@ function mcp:parse(raw)
 		return self:handlemsg(table.remove(args, 1), args)
 
 	elseif msg ~= "mcp" and auth ~= self.auth then
-		return nil, "incorrect auth key '" .. tostring(auth) .. "'"
+		return nil, "incorrect auth key '" .. auth .. "'"
 	end
 
 	local args = {}
@@ -101,9 +113,11 @@ function mcp:parse(raw)
 	while i <= len do
 		local s, e, key, val = argstr:find("^ +([^ :]+): +\1([^\1]*)\1", i)
 		if not s then
-			s, e, key, val = argstr:find("^ +([^ :]+): +([^ \1]*)", i)
+			s, e, key, val = argstr:find("^ +([^ :]+): +([^ \1]+)", i)
 			if not s then
-				return nil, "invalid syntax (bad key-value pair)"
+				return nil, "invalid arguments"
+			elseif not check_simple(val) then
+				return nil, "'" .. key .. "' has invalid simple value '" .. val .. "'"
 			end
 		end
 
@@ -112,6 +126,11 @@ function mcp:parse(raw)
 			key = key:sub(1, -2)
 			-- value is required syntactically, but is ignored
 			val = {}
+		end
+		if not check_ident(key) then
+			return nil, "invalid keyword '" .. key .. "'"
+		elseif args[key] then
+			return nil, "duplicate keyword '" .. key .. "'"
 		end
 		args[key] = val
 		i = e + 1
@@ -123,11 +142,11 @@ function mcp:parse(raw)
 
 	local tag = args["_data-tag"]
 	if not tag then
-		return nil, "multiline message started with no _data-tag"
-	elseif tag:find("[\"*:\\ ]") then
-		return nil, "multiline message started with invalid _data-tag '" .. tag .. "'"
+		return nil, "multiline started with no _data-tag"
+	elseif #tag == 0 or not check_simple(tag) then
+		return nil, "multiline started with invalid _data-tag '" .. tag .. "'"
 	elseif self.data[tag] then
-		return nil, "multiline message started with existing _data-tag '" .. tag .. "'"
+		return nil, "multiline started with existing _data-tag '" .. tag .. "'"
 	else
 		args[1] = msg
 		self.data[tag] = args
@@ -185,13 +204,13 @@ function mcp:handlemsg(msg, args)
 		self.negotiating = true
 
 	else
-		local fn = self.handlers[msg:lower()]
+		local fn = self.handlers[msg]
 		if not fn then
 			return nil, "unhandled message '" .. msg .. "'"
 		end
 		local err = fn(self, args)
 		if err then
-			return nil, err
+			return nil, msg .. ": " .. err
 		end
 	end
 
@@ -213,14 +232,12 @@ function mcp:sendmcp(msg, args, nocheck)
 
 	for k, v in pairs(args or {}) do
 		k, v = tostring(k), tostring(v)
-		if not k:find("^[%a_][^\"*:\\ ]*$") then
-			error("invalid key '" .. k .. "'", 2)
-		end
+		assert(check_ident(k), "invalid keyword '" .. k .. "'")
 
 		if v:find("\n") then
 			multi[k] = v
 			res[#res + 1] = k .. '*: ""'
-		elseif v:find(" ") then
+		elseif not check_simple(v) then
 			res[#res + 1] = ('%s: "%s"'):format(k, v:gsub("[\"\\]", "\\%1"))
 		else
 			res[#res + 1] = ("%s: %s"):format(k, v)
