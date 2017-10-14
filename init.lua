@@ -160,12 +160,18 @@ function mcp:handlemsg(msg, args)
 	-- NOTE: we allow renegotiation, but this isn't mentioned in the standard
 	-- so you probably shouldn't actually try to trigger it yourself
 	if msg == "mcp" then
+		if not tonumber(args.version) then
+			return nil, "mcp: invalid 'version'"
+		elseif not tonumber(args.to) then
+			return nil, "mcp: invalid 'to'"
+		end
+
 		if self.version ~= nil then
 			self:reset()
 		end
 
 		local remote = self.remote
-		remote.minver, remote.maxver = args["version"], args["to"]
+		remote.minver, remote.maxver = args.version, args.to
 
 		self.version = mcp.checkversion(
 			self.minver, self.maxver,

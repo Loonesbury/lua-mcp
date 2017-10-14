@@ -93,6 +93,12 @@ return {
 		-- the remote opened a new cord with us
 		["open"] = function(obj, args)
 
+			if not args._id then
+				return "invalid '_id'"
+			elseif not args._type then
+				return "invalid '_type'"
+			end
+
 			local cord = meta.new(obj, args._id, args._type)
 			obj.cords[cord._id] = cord
 
@@ -105,9 +111,15 @@ return {
 		-- the remote sent us a message over a cord
 		[""] = function(obj, args)
 
+			if not args._id then
+				return "invalid '_id'"
+			elseif not args._message then
+				return "invalid '_message'"
+			end
+
 			local cord = obj.cords[args._id]
 			if not cord then
-				return "remote used unknown cord '" .. args._id .. "'"
+				return "unknown cord '" .. args._id .. "'"
 			end
 
 			local msg = args._message
@@ -130,9 +142,13 @@ return {
 		-- the remote closed a cord
 		["closed"] = function(obj, args)
 
+			if not args._id then
+				return "invalid '_id'"
+			end
+
 			local cord = obj.cords[args._id]
 			if not cord then
-				return "remote closed unknown cord '" .. args._id .. "'"
+				return "unknown cord '" .. args._id .. "'"
 			end
 			cord:onclosed(true)
 
