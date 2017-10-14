@@ -129,10 +129,10 @@ function mcp:parse(raw)
 		end
 		if not check_ident(key) then
 			return nil, "invalid keyword '" .. key .. "'"
-		elseif args[key] then
+		elseif args[key:lower()] then
 			return nil, "duplicate keyword '" .. key .. "'"
 		end
-		args[key] = val
+		args[key:lower()] = val
 		i = e + 1
 	end
 
