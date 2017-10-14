@@ -229,7 +229,8 @@ end
 function mcp:sendmcp(msg, args, nocheck)
 
 	if not nocheck then
-		assert(self.version, "server does not support MCP, or negotiation not yet begun")
+		assert(self.version, "sent message before negotiation")
+		assert(self.version ~= "0.0", "cannot send to incompatible remote")
 		-- argh argh argh
 		assert(self:supports(msg) or self:supports(msg:gsub("%-[^%-]+$", "")),
 			"sent unsupported message '" .. msg .. "'"
