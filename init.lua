@@ -14,6 +14,7 @@ end
 -- returns the highest shared version between [low, high] and [min, max]
 -- if the ranges do not overlap, returns nil
 function mcp.checkversion(low, high, min, max)
+
 	low, high = fixminor(low), fixminor(high)
 	min, max  = fixminor(min), fixminor(max)
 
@@ -70,8 +71,7 @@ function mcp:parse(raw)
 		if not key then
 			return nil, "invalid syntax"
 		end
-		local prev = args[key]
-		args[key] = prev .. pval .. "\n"
+		table.insert(args[key], pval)
 		return true
 
 	-- finish multi-line message
@@ -79,6 +79,11 @@ function mcp:parse(raw)
 		local args = self.data[auth]
 		if not args then
 			return nil, "multiline message with unused tag '" .. auth .. "'"
+		end
+		for k, v in pairs(args) do
+			if type(v) == "table" then
+				args[k] = table.concat(v, "\n")
+			end
 		end
 
 		self.data[auth] = nil
@@ -103,9 +108,10 @@ function mcp:parse(raw)
 		end
 
 		if key:sub(-1) == "*" then
-			key = key:sub(1, -2)
 			multi = true
-			val = #val > 0 and (val .. "\n") or val
+			key = key:sub(1, -2)
+			-- value is required syntactically, but is ignored
+			val = {}
 		end
 		args[key] = val
 		i = e + 1
