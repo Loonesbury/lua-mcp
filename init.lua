@@ -83,7 +83,7 @@ function mcp:parse(raw)
 		if not key then
 			return nil, "invalid syntax"
 		end
-		table.insert(args[key], pval)
+		table.insert(args[key:lower()], pval)
 		return true
 
 	-- finish multi-line message
@@ -159,7 +159,7 @@ function mcp:handlemcp(msg, args)
 
 	-- NOTE: we allow renegotiation, but this isn't mentioned in the standard
 	-- so you probably shouldn't actually try to trigger it yourself
-	if msg == "mcp" then
+	if msg:lower() == "mcp" then
 		if not tonumber(args.version) then
 			return nil, "mcp: invalid 'version'"
 		elseif not tonumber(args.to) then
@@ -233,7 +233,7 @@ function mcp:sendmcp(msg, args, nocheck)
 			"sent unsupported message '" .. msg .. "'"
 		)
 	end
-	local res = (msg == "mcp") and {msg} or {msg, self.auth}
+	local res = (msg:lower() == "mcp") and {msg} or {msg, self.auth}
 	local multi = {}
 
 	for k, v in pairs(args or {}) do
@@ -285,6 +285,7 @@ function mcp:onready() end
 
 -- if we support the given package, returns its version number
 function mcp:supports(pkg)
+	pkg = pkg:lower()
 	return self.packages[pkg] and self.packages[pkg].version
 end
 
@@ -387,10 +388,10 @@ function mcp.new(auth, pkgs)
 	-- load and verify additional packages
 	for k, v in pairs(pkgs or {}) do
 		if type(v) == "string" then
-			v = require("mcp.packages." .. v)
+			v = require("mcp.packages." .. v:lower())
 		end
 		if type(v) == "table" then
-			obj.packages[k] = v
+			obj.packages[k:lower()] = v
 		end
 	end
 	for pkgname, v in pairs(obj.packages) do

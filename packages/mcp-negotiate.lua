@@ -20,9 +20,9 @@ return {
 				maxver = args["max-version"],
 			}
 
-			obj.remote.packages[args.package] = rem
+			obj.remote.packages[args.package:lower()] = rem
 
-			local loc = obj.packages[args.package]
+			local loc = obj.packages[args.package:lower()]
 			if loc then
 				loc.version = mcp.checkversion(loc.minver, loc.maxver, rem.minver, rem.maxver)
 			end
