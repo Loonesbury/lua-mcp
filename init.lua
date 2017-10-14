@@ -386,7 +386,12 @@ function mcp.new(auth, pkgs)
 
 	-- load and verify additional packages
 	for k, v in pairs(pkgs or {}) do
-		obj.packages[k] = v
+		if type(v) == "string" then
+			v = require("mcp.packages." .. v)
+		end
+		if type(v) == "table" then
+			obj.packages[k] = v
+		end
 	end
 	for pkgname, v in pairs(obj.packages) do
 		v.minver = assert(v.minver, "package '" .. pkgname .. "' has no 'minver'")
