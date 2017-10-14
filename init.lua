@@ -101,7 +101,7 @@ function mcp:parse(raw)
 		self.data[auth] = nil
 		args["_data-tag"] = nil
 
-		return self:handlemsg(table.remove(args, 1), args)
+		return self:handlemcp(table.remove(args, 1), args)
 
 	elseif msg ~= "mcp" and auth ~= self.auth then
 		return nil, "incorrect auth key '" .. auth .. "'"
@@ -137,7 +137,7 @@ function mcp:parse(raw)
 	end
 
 	if not multi then
-		return self:handlemsg(msg, args)
+		return self:handlemcp(msg, args)
 	end
 
 	local tag = args["_data-tag"]
@@ -155,7 +155,7 @@ function mcp:parse(raw)
 
 end
 
-function mcp:handlemsg(msg, args)
+function mcp:handlemcp(msg, args)
 
 	-- NOTE: we allow renegotiation, but this isn't mentioned in the standard
 	-- so you probably shouldn't actually try to trigger it yourself
