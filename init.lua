@@ -209,7 +209,7 @@ function mcp:handlemcp(msg, args)
 		self:sendmcp("mcp-negotiate-end", nil, true)
 		self.negotiating = true
 
-	else
+	elseif self.version and self.version ~= "0.0" then
 		local fn = self.handlers[msg]
 		if not fn then
 			return nil, "unhandled message '" .. msg .. "'"
@@ -218,9 +218,11 @@ function mcp:handlemcp(msg, args)
 		if err then
 			return nil, msg .. ": " .. err
 		end
-	end
+		return true
 
-	return true
+	else
+		return nil, "received '" .. msg .. "' before negotiation"
+	end
 
 end
 
