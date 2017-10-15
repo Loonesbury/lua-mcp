@@ -262,10 +262,10 @@ function mcp:sendmcp(msg, args, nocheck)
 		self:sendraw("#$#" .. table.concat(res, " ") .. " _data-tag: " .. tag)
 		for key, val in pairs(multi) do
 			for line in string.gmatch(val .. "\n", "([^\n]*)\n") do
-				self:sendraw(("#$#: %s %s: %s"):format(tag, key, line))
+				self:sendraw(("#$#* %s %s: %s"):format(tag, key, line))
 			end
 		end
-		self:sendraw("#$#* " .. tag)
+		self:sendraw("#$#: " .. tag)
 	end
 
 end
