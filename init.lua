@@ -136,10 +136,12 @@ function mcp:parse(raw)
 		i = e + 1
 	end
 
+	-- if none of the args were multi-line, we can just handle it now
 	if not multi then
 		return self:handlemcp(msg, args)
 	end
 
+	-- otherwise, store it and wait for the continuation lines
 	local tag = args["_data-tag"]
 	if not tag then
 		return nil, "multiline started with no _data-tag"
@@ -184,10 +186,6 @@ function mcp:handlemcp(msg, args)
 			return true
 		end
 
-		-- the standard isn't explicit on who MUST send a key.
-		-- Fuzzball MUCK seems to generate a random key if the client
-		-- doesn't send one, but that's the only place I've seen this
-		-- done, so let's not bother imitating it.
 		if self.server then
 			self.auth = args["authentication-key"]
 		end
@@ -227,6 +225,11 @@ function mcp:handlemcp(msg, args)
 
 end
 
+-- sends an MCP message to the remote.
+-- 'args' is a dictionary of str "key" => str "value"
+-- set 'nocheck' to true to send messages before negotiation
+-- if any arguments contain newlines, they will be automatically sent
+-- in a multi-line message.
 function mcp:sendmcp(msg, args, nocheck)
 
 	if not nocheck then
@@ -316,7 +319,7 @@ function mcp:getversion()
 	return tonumber(major), tonumber(minor) or 0
 end
 
--- resets everything
+-- resets the MCP state to default values
 function mcp:reset()
 
 	if self.server then
@@ -329,15 +332,14 @@ function mcp:reset()
 	self.remote.minver, self.remote.maxver = nil, nil
 	self.remote.packages = {
 		["mcp-negotiate"] = {
-			-- MCP2.1 requires AT LEAST mcp-negotiate 1.0.
-			-- also mcp-negotiate 1.0 is terrible and doesn't negotiate
-			-- support for *itself*.
+			-- MCP2.1 requires AT LEAST mcp-negotiate 1.0, which won't
+			-- negotiate support for itself, so we have to assume it's there
 			minver = "1.0",
 			maxver = "1.0"
 		}
 	}
 
-	-- as recommended by MCP2.1, we start out with mcp-negotiate 2.0 since
+	-- as recommended by MCP2.1, we start out using mcp-negotiate 2.0 since
 	-- it's compatible with 1.0 and 1.0 is required for MCP2.1 compliance.
 	self.packages["mcp-negotiate"].version = "2.0"
 
@@ -358,7 +360,8 @@ function mcp.new(auth, pkgs)
 	end
 
 	local obj = setmetatable({
-		-- "nil" if MCP is not in use
+		-- The maximum MCP version that local and remote both support
+		-- nil if MCP is not in use
 		version = nil,
 		minver = "2.1",
 		maxver = "2.1",
