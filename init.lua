@@ -75,20 +75,20 @@ function mcp:parse(raw)
 
 	-- continue multi-line message
 	if msg == "*" then
-		local args = self.data[auth]
+		local args = self.multilines[auth]
 		if not args then
 			return nil, "multiline message with unused tag '" .. auth .. "'"
 		end
 		local key, pval = argstr:match("^ +([^ :]+): (.-)$")
 		if not key then
-			return nil, "invalid syntax"
+			return nil, "invalid multiline syntax"
 		end
 		table.insert(args[key:lower()], pval)
 		return true
 
 	-- finish multi-line message
 	elseif msg == ":" then
-		local args = self.data[auth]
+		local args = self.multilines[auth]
 		if not args then
 			return nil, "multiline message with unused tag '" .. auth .. "'"
 		end
@@ -98,7 +98,7 @@ function mcp:parse(raw)
 			end
 		end
 
-		self.data[auth] = nil
+		self.multilines[auth] = nil
 		args["_data-tag"] = nil
 
 		return self:handlemcp(table.remove(args, 1), args)
@@ -145,11 +145,11 @@ function mcp:parse(raw)
 		return nil, "multiline started with no _data-tag"
 	elseif #tag == 0 or not check_simple(tag) then
 		return nil, "multiline started with invalid _data-tag '" .. tag .. "'"
-	elseif self.data[tag] then
+	elseif self.multilines[tag] then
 		return nil, "multiline started with existing _data-tag '" .. tag .. "'"
 	else
 		args[1] = msg
-		self.data[tag] = args
+		self.multilines[tag] = args
 		return true
 	end
 
@@ -367,7 +367,7 @@ function mcp.new(auth, pkgs)
 		client = (auth ~= nil),
 
 		-- multi-line data cache
-		data = {},
+		multilines = {},
 		lasttag = 0,
 
 		-- packages we support
