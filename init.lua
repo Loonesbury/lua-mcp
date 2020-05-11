@@ -208,6 +208,7 @@ function mcp:handlemcp(msg, args)
 		end
 		self:sendmcp("mcp-negotiate-end", nil, true)
 		self.negotiating = true
+		return true
 
 	elseif self.version and self.version ~= "0.0" then
 		local fn = self.handlers[msg]
