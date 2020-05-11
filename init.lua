@@ -257,7 +257,7 @@ function mcp:sendmcp(msg, args, nocheck)
 	if not next(multi) then
 		self:sendraw("#$#" .. table.concat(res, " "))
 	else
-		self.lasttag = self.lasttag + 1
+		self.lasttag = (self.lasttag + 1) % 0xFFFFFFFF
 		local tag = ("%x"):format(self.lasttag)
 
 		self:sendraw("#$#" .. table.concat(res, " ") .. " _data-tag: " .. tag)
@@ -369,7 +369,11 @@ function mcp.new(auth, pkgs)
 
 		-- multi-line data cache
 		multilines = {},
-		lasttag = 0,
+		-- last _data-tag we used. we start from a random value and increment
+		-- it for each multiline message. this is not perfect, but it avoids
+		-- potentially re-using a _data-tag when the user's sendraw()
+		-- implementation is able to interleave output lines.
+		self.lasttag = math.random(0x0, 0xFFFFFFFF - 1)
 
 		-- packages we support
 		-- supported packages will have 'version' != nil
