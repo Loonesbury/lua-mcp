@@ -208,7 +208,12 @@ function mcp:handlemcp(msg, args)
 		self.negotiating = true
 		return true
 
-	elseif self.version and self.version ~= "0.0" then
+	elseif self.version then
+		-- server is incompatible and we silently drop the message
+		if self.version == "0.0" then
+			return true
+		end
+
 		local fn = self.handlers[msg]
 		if not fn then
 			return nil, "unhandled message '" .. msg .. "'"
